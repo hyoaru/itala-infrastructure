@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib/core";
-import { InfrastructureStack } from "../lib/stacks/infrastructure";
+import "dotenv/config";
+import { IdentityStack } from "../lib/identity";
 
 const app = new cdk.App();
-new InfrastructureStack(app, "ItalaInfrastructureStack", {
+new IdentityStack(app, "ItalaStagingIdentityStack", {
   env: {
-    account: process.env.TOOLING_ACCOUNT_ID,
+    account: process.env.STAGING_ACCOUNT_ID,
     region: process.env.AWS_REGION,
   },
 });
