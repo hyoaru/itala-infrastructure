@@ -13,7 +13,7 @@ export class IdentityStack extends cdk.Stack {
       userPoolName: "itala",
       signInAliases: { email: true },
       selfSignUpEnabled: true,
-      autoVerify: { email: false },
+      autoVerify: { email: true },
       mfa: cognito.Mfa.OFF,
       passwordPolicy: {
         minLength: 8,
