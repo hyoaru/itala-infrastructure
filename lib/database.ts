@@ -13,6 +13,7 @@ export class DatabaseStack extends cdk.Stack {
       tableClass: dynamodb.TableClass.STANDARD,
       partitionKey: { name: "PK", type: dynamodb.AttributeType.STRING },
       sortKey: { name: "SK", type: dynamodb.AttributeType.STRING },
+      timeToLiveAttribute: "ttl",
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       deletionProtection: false,
       billing: dynamodb.Billing.onDemand(),
