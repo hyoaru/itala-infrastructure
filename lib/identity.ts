@@ -55,6 +55,7 @@ export class IdentityStack extends cdk.Stack {
       enableTokenRevocation: true,
       preventUserExistenceErrors: true,
       refreshTokenValidity: cdk.Duration.days(5),
+      refreshTokenRotationGracePeriod: cdk.Duration.seconds(10),
       accessTokenValidity: cdk.Duration.hours(1),
       idTokenValidity: cdk.Duration.hours(1),
       authFlows: { userPassword: true, userSrp: true, user: true },
