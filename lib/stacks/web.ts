@@ -8,6 +8,11 @@ import {
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
 import { PARAMETER_BASE_PATH } from "../constants";
+import {
+  AwsCustomResource,
+  AwsCustomResourcePolicy,
+  PhysicalResourceId,
+} from "aws-cdk-lib/custom-resources";
 
 interface WebStackProps extends cdk.StackProps {
   projectBucket: s3.Bucket;
@@ -49,6 +54,20 @@ export class WebStack extends cdk.Stack {
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
         },
+        errorResponses: [
+          {
+            httpStatus: 403,
+            responseHttpStatus: 200,
+            responsePagePath: "/index.html",
+            ttl: cdk.Duration.minutes(0),
+          },
+          {
+            httpStatus: 404,
+            responseHttpStatus: 200,
+            responsePagePath: "/index.html",
+            ttl: cdk.Duration.minutes(0),
+          },
+        ],
       },
     );
     cdk.Tags.of(this.cloudfrontDistribution).add("Name", "Itala");
@@ -76,5 +95,36 @@ export class WebStack extends cdk.Stack {
       parameterName: `/${PARAMETER_BASE_PATH}/cloudfront-distribution-id`,
       stringValue: this.cloudfrontDistribution.distributionId,
     });
+
+    const targetPlanTier = "Free";
+    const pricingPlanAssociation = new AwsCustomResource(
+      this,
+      "CloudFrontPricingPlanAssociation",
+      {
+        onCreate: {
+          service: "PricingPlanManager",
+          action: "associatePricingPlan", // API action to map a distribution to a tier
+          parameters: {
+            ResourceArn: `arn:aws:cloudfront::${this.account}:distribution/${this.cloudfrontDistribution.distributionId}`,
+            PricingPlanTier: targetPlanTier,
+          },
+          physicalResourceId: PhysicalResourceId.of(
+            `${this.cloudfrontDistribution.distributionId}-${targetPlanTier}`,
+          ),
+        },
+        onDelete: {
+          service: "PricingPlanManager",
+          action: "disassociatePricingPlan",
+          parameters: {
+            ResourceArn: `arn:aws:cloudfront::${this.account}:distribution/${this.cloudfrontDistribution.distributionId}`,
+          },
+        },
+        policy: AwsCustomResourcePolicy.fromSdkCalls({
+          resources: AwsCustomResourcePolicy.ANY_RESOURCE, // Scope down to specific pricing plan ARNs if preferred
+        }),
+      },
+    );
+
+    pricingPlanAssociation.node.addDependency(this.cloudfrontDistribution);
   }
 }
