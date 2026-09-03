@@ -4,19 +4,20 @@ import {
   aws_dynamodb as dynamodb,
   aws_lambda as lambda,
   aws_logs as logs,
+  aws_s3 as s3,
   aws_ssm as ssm,
 } from "aws-cdk-lib";
+import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
 import { PARAMETER_BASE_PATH } from "../constants";
 
 interface ApiStackProps extends cdk.StackProps {
+  projectBucket: s3.Bucket;
   dynamodbTable: dynamodb.TableV2;
 }
 
 export class ApiStack extends cdk.Stack {
-  public readonly apiGateway: apigateway.HttpApi;
-
   constructor(scope: Construct, id: string, props: ApiStackProps) {
     super(scope, id, props);
 
@@ -26,24 +27,33 @@ export class ApiStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    const apiArtifact = new s3deploy.BucketDeployment(this, "ApiArtifact", {
+      sources: [s3deploy.Source.asset("./assets/api")],
+      destinationBucket: props.projectBucket,
+      destinationKeyPrefix: "api",
+    });
+
     const apiFunction = new lambda.Function(this, "ApiFunction", {
       runtime: lambda.Runtime.PROVIDED_AL2023,
       architecture: lambda.Architecture.ARM_64,
       handler: "main",
-      code: lambda.Code.fromInline("initialize"),
+      code: lambda.Code.fromBucketV2(props.projectBucket, "api/function.zip"),
       loggingFormat: lambda.LoggingFormat.JSON,
       applicationLogLevelV2: lambda.ApplicationLogLevel.INFO,
       systemLogLevelV2: lambda.SystemLogLevel.INFO,
       logGroup: logGroup,
     });
 
+    apiFunction.node.addDependency(apiArtifact);
+    props.projectBucket.grantRead(apiFunction, "api/function.zip");
     props.dynamodbTable.grantReadWriteData(apiFunction);
 
-    this.apiGateway = new apigateway.HttpApi(this, "ApiGateway", {
+    const apiGateway = new apigateway.HttpApi(this, "ApiGateway", {
+      apiName: "itala",
       createDefaultStage: true,
     });
 
-    this.apiGateway.addRoutes({
+    apiGateway.addRoutes({
       path: "/{proxy+}",
       methods: [apigateway.HttpMethod.ANY],
       integration: new apigatewayIntegrations.HttpLambdaIntegration(
@@ -52,9 +62,9 @@ export class ApiStack extends cdk.Stack {
       ),
     });
 
-    new ssm.StringParameter(this, "ApiUrlParameter", {
+    new ssm.StringParameter(this, "ApiBaseUrlParameter", {
       parameterName: `/${PARAMETER_BASE_PATH}/api-base-url`,
-      stringValue: this.apiGateway.url!,
+      stringValue: apiGateway.url!,
     });
   }
 }

@@ -44,7 +44,7 @@ export class DatabaseStack extends cdk.Stack {
     });
 
     new ssm.StringParameter(this, "TableNameParameter", {
-      parameterName: `/${PARAMETER_BASE_PATH}/user-pool-id`,
+      parameterName: `/${PARAMETER_BASE_PATH}/table-name`,
       stringValue: this.table.tableName,
     });
   }

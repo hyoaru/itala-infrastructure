@@ -1,15 +1,15 @@
 import {
+  aws_cloudfront as cloudfront,
   aws_iam as iam,
   aws_s3 as s3,
-  aws_cloudfront as cloudfront,
 } from "aws-cdk-lib";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
 import { PARAMETER_BASE_PATH } from "../constants";
 
 interface DeploymentStackProps extends cdk.StackProps {
-  clientArtifactBucket: s3.Bucket;
-  clientDistribution: cloudfront.Distribution;
+  projectBucket: s3.Bucket;
+  cloudfrontDistribution: cloudfront.Distribution;
 }
 
 export class DeploymentStack extends cdk.Stack {
@@ -38,9 +38,11 @@ export class DeploymentStack extends cdk.Stack {
       ),
     });
 
-    props.clientArtifactBucket.grantReadWrite(deployRole);
-    props.clientArtifactBucket.grantDelete(deployRole);
-    props.clientDistribution.grantCreateInvalidation(deployRole);
+    props.projectBucket.grantReadWrite(deployRole, "client/*");
+    props.projectBucket.grantDelete(deployRole, "client/*");
+    props.projectBucket.grantReadWrite(deployRole, "api/*");
+    props.projectBucket.grantDelete(deployRole, "api/*");
+    props.cloudfrontDistribution.grantCreateInvalidation(deployRole);
 
     deployRole.addToPolicy(
       new iam.PolicyStatement({

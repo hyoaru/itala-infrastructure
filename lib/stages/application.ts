@@ -2,6 +2,7 @@ import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
 import {
   ApiStack,
+  BootstrapStack,
   DatabaseStack,
   DeploymentStack,
   IdentityStack,
@@ -12,14 +13,22 @@ export class ApplicationStage extends cdk.Stage {
   constructor(scope: Construct, id: string, props?: cdk.StageProps) {
     super(scope, id, props);
 
+    const bootstrapStack = new BootstrapStack(this, "Bootstrap");
     new IdentityStack(this, "Identity");
     const databaseStack = new DatabaseStack(this, "Database");
-    new ApiStack(this, "Api", { dynamodbTable: databaseStack.table });
-    const webStack = new WebStack(this, "Web");
+
+    new ApiStack(this, "Api", {
+      projectBucket: bootstrapStack.projectBucket,
+      dynamodbTable: databaseStack.table,
+    });
+
+    const webStack = new WebStack(this, "Web", {
+      projectBucket: bootstrapStack.projectBucket,
+    });
 
     new DeploymentStack(this, "Deployment", {
-      clientArtifactBucket: webStack.bucket,
-      clientDistribution: webStack.distribution,
+      projectBucket: bootstrapStack.projectBucket,
+      cloudfrontDistribution: webStack.cloudfrontDistribution,
     });
   }
 }

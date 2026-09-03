@@ -1,53 +1,79 @@
-import * as cdk from "aws-cdk-lib/core";
 import {
-  aws_s3 as s3,
   aws_cloudfront as cloudfront,
-  aws_cloudfront_origins as cloudfront_origins,
+  aws_cloudfront_origins as cloudfrontOrigins,
+  aws_s3 as s3,
   aws_ssm as ssm,
+  aws_iam as iam,
 } from "aws-cdk-lib";
+import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
 import { PARAMETER_BASE_PATH } from "../constants";
 
-export class WebStack extends cdk.Stack {
-  public readonly bucket: s3.Bucket;
-  public readonly distribution: cloudfront.Distribution;
+interface WebStackProps extends cdk.StackProps {
+  projectBucket: s3.Bucket;
+}
 
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+export class WebStack extends cdk.Stack {
+  public readonly cloudfrontDistribution: cloudfront.Distribution;
+
+  constructor(scope: Construct, id: string, props: WebStackProps) {
     super(scope, id, props);
 
-    this.bucket = new s3.Bucket(this, "Bucket", {
-      bucketName: `itala-${this.account}-web`,
-      bucketNamespace: s3.BucketNamespace.GLOBAL,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: false,
-      enforceSSL: true,
-      bucketKeyEnabled: true,
-      autoDeleteObjects: true,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
-
-    new ssm.StringParameter(this, "BucketNameParameter", {
-      parameterName: `/${PARAMETER_BASE_PATH}/client-artifact-bucket-name`,
-      stringValue: this.bucket.bucketName,
-    });
-
-    this.distribution = new cloudfront.Distribution(this, "Distribution", {
-      defaultRootObject: "index.html",
-      defaultBehavior: {
-        origin: cloudfront_origins.S3BucketOrigin.withOriginAccessControl(
-          this.bucket,
-        ),
-        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+    const projectBucket = s3.Bucket.fromBucketAttributes(
+      this,
+      "ProjectBucket",
+      {
+        bucketName: props.projectBucket.bucketName,
+        bucketArn: props.projectBucket.bucketArn,
       },
-    });
-    cdk.Tags.of(this.distribution).add("Name", "Itala");
+    );
 
-    new ssm.StringParameter(this, "DistributionIdParameter", {
-      parameterName: `/${PARAMETER_BASE_PATH}/client-distribution-id`,
-      stringValue: this.distribution.distributionId,
+    new ssm.StringParameter(this, "ClientArtifactS3UriParameter", {
+      parameterName: `/${PARAMETER_BASE_PATH}/client-artifact-s3-uri`,
+      stringValue: `s3://${props.projectBucket.bucketName}/client`,
+    });
+
+    this.cloudfrontDistribution = new cloudfront.Distribution(
+      this,
+      "CloudfrontDistribution",
+      {
+        defaultRootObject: "index.html",
+        defaultBehavior: {
+          origin: cloudfrontOrigins.S3BucketOrigin.withOriginAccessControl(
+            projectBucket,
+            {
+              originPath: "/client",
+            },
+          ),
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        },
+      },
+    );
+    cdk.Tags.of(this.cloudfrontDistribution).add("Name", "Itala");
+
+    new s3.CfnBucketPolicy(this, "WebProjectBucketPolicy", {
+      bucket: props.projectBucket.bucketName,
+      policyDocument: new iam.PolicyDocument({
+        statements: [
+          new iam.PolicyStatement({
+            actions: ["s3:GetObject"],
+            resources: [`${props.projectBucket.bucketArn}/client/*`],
+            principals: [new iam.ServicePrincipal("cloudfront.amazonaws.com")],
+            conditions: {
+              StringEquals: {
+                "AWS:SourceArn": `arn:aws:cloudfront::${this.account}:distribution/${this.cloudfrontDistribution.distributionId}`,
+              },
+            },
+          }),
+        ],
+      }),
+    });
+
+    new ssm.StringParameter(this, "CloudfrontDistributionIdParameter", {
+      parameterName: `/${PARAMETER_BASE_PATH}/cloudfront-distribution-id`,
+      stringValue: this.cloudfrontDistribution.distributionId,
     });
   }
 }
