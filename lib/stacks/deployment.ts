@@ -19,7 +19,7 @@ export class DeploymentStack extends cdk.Stack {
     const githubOidcProviderArn = cdk.Fn.importValue("GithubOidcProviderArn");
 
     const deployRole = new iam.Role(this, "GitHubDeployRole", {
-      roleName: "GitHubDeployRole",
+      roleName: "ItalaGitHubDeployRole",
 
       assumedBy: new iam.FederatedPrincipal(
         githubOidcProviderArn,
