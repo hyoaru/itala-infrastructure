@@ -1,30 +1,15 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib/core";
 import "dotenv/config";
-import { IdentityStack } from "../lib/identity";
-import { DatabaseStack } from "../lib/database";
-import { WebStack } from "../lib/web";
+import { ApplicationStage } from "../lib/stages";
 
 const app = new cdk.App();
 cdk.Tags.of(app).add("Project", "Itala");
 
-new IdentityStack(app, "ItalaStagingIdentityStack", {
+const staging = new ApplicationStage(app, "ItalaStaging", {
   env: {
     account: process.env.STAGING_ACCOUNT_ID,
-    region: process.env.AWS_REGION,
+    region: process.env.CDK_DEFAULT_REGION,
   },
 });
-
-new DatabaseStack(app, "ItalaStagingDatabaseStack", {
-  env: {
-    account: process.env.STAGING_ACCOUNT_ID,
-    region: process.env.AWS_REGION,
-  },
-});
-
-new WebStack(app, "ItalaStagingWebStack", {
-  env: {
-    account: process.env.STAGING_ACCOUNT_ID,
-    region: process.env.AWS_REGION,
-  },
-});
+cdk.Tags.of(staging).add("Environment", "Staging");
