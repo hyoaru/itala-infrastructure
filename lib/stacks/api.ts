@@ -7,6 +7,7 @@ import {
   aws_s3 as s3,
   aws_ssm as ssm,
   aws_cognito as cognito,
+  aws_cloudfront as cloudfront,
 } from "aws-cdk-lib";
 
 import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
@@ -18,6 +19,7 @@ interface ApiStackProps extends cdk.StackProps {
   projectBucket: s3.Bucket;
   userPool: cognito.UserPool;
   dynamodbTable: dynamodb.TableV2;
+  cloudfrontDistribution: cloudfront.Distribution;
 }
 
 export class ApiStack extends cdk.Stack {
@@ -37,6 +39,7 @@ export class ApiStack extends cdk.Stack {
     });
 
     const apiFunction = new lambda.Function(this, "ApiFunction", {
+      functionName: "ItalaApiFunction",
       runtime: lambda.Runtime.PROVIDED_AL2023,
       architecture: lambda.Architecture.ARM_64,
       handler: "main",
@@ -53,7 +56,7 @@ export class ApiStack extends cdk.Stack {
 
     new ssm.StringParameter(this, "ApiFunctionS3Uri", {
       parameterName: `/${PARAMETER_BASE_PATH}/api-function-s3-uri`,
-      stringValue: `s3://${props.projectBucket.bucketName}}/api/function.zip`,
+      stringValue: `s3://${props.projectBucket.bucketName}/api/function.zip`,
     });
 
     apiFunction.node.addDependency(apiArtifact);
@@ -63,6 +66,18 @@ export class ApiStack extends cdk.Stack {
     const apiGateway = new apigateway.HttpApi(this, "ApiGateway", {
       apiName: "itala",
       createDefaultStage: true,
+      corsPreflight: {
+        allowOrigins: [
+          `https://${props.cloudfrontDistribution.distributionDomainName}`,
+        ],
+        allowMethods: [apigateway.CorsHttpMethod.ANY],
+        allowHeaders: [
+          "Accept",
+          "Authorization",
+          "Content-Type",
+          "Idempotency-Key",
+        ],
+      },
     });
 
     apiGateway.addRoutes({

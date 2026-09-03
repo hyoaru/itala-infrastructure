@@ -52,6 +52,7 @@ export class WebStack extends cdk.Stack {
       },
     );
     cdk.Tags.of(this.cloudfrontDistribution).add("Name", "Itala");
+    this.cloudfrontDistribution.distributionDomainName;
 
     new s3.CfnBucketPolicy(this, "WebProjectBucketPolicy", {
       bucket: props.projectBucket.bucketName,

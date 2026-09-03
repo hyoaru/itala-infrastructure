@@ -17,14 +17,15 @@ export class ApplicationStage extends cdk.Stage {
     const identityStack = new IdentityStack(this, "Identity");
     const databaseStack = new DatabaseStack(this, "Database");
 
+    const webStack = new WebStack(this, "Web", {
+      projectBucket: bootstrapStack.projectBucket,
+    });
+
     new ApiStack(this, "Api", {
       projectBucket: bootstrapStack.projectBucket,
       userPool: identityStack.userPool,
       dynamodbTable: databaseStack.table,
-    });
-
-    const webStack = new WebStack(this, "Web", {
-      projectBucket: bootstrapStack.projectBucket,
+      cloudfrontDistribution: webStack.cloudfrontDistribution,
     });
 
     new DeploymentStack(this, "Deployment", {
