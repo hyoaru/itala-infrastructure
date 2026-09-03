@@ -29,8 +29,8 @@ export class DeploymentStack extends cdk.Stack {
           },
           StringLike: {
             "token.actions.githubusercontent.com:sub": [
-              "repo:hyoaru/itala-pwa:*",
-              "repo:hyoaru/itala-api:*",
+              "repo:hyoaru@*/itala-pwa@*:environment:*",
+              "repo:hyoaru@*/itala-api@*:environment:*",
             ],
           },
         },
