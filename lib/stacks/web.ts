@@ -1,18 +1,13 @@
 import {
   aws_cloudfront as cloudfront,
   aws_cloudfront_origins as cloudfrontOrigins,
+  aws_iam as iam,
   aws_s3 as s3,
   aws_ssm as ssm,
-  aws_iam as iam,
 } from "aws-cdk-lib";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
 import { PARAMETER_BASE_PATH } from "../constants";
-import {
-  AwsCustomResource,
-  AwsCustomResourcePolicy,
-  PhysicalResourceId,
-} from "aws-cdk-lib/custom-resources";
 
 interface WebStackProps extends cdk.StackProps {
   projectBucket: s3.Bucket;
@@ -71,7 +66,11 @@ export class WebStack extends cdk.Stack {
       },
     );
     cdk.Tags.of(this.cloudfrontDistribution).add("Name", "Itala");
-    this.cloudfrontDistribution.distributionDomainName;
+
+    new ssm.StringParameter(this, "CloudfrontDistributionIdParameter", {
+      parameterName: `/${PARAMETER_BASE_PATH}/cloudfront-distribution-id`,
+      stringValue: this.cloudfrontDistribution.distributionId,
+    });
 
     new s3.CfnBucketPolicy(this, "WebProjectBucketPolicy", {
       bucket: props.projectBucket.bucketName,
@@ -90,41 +89,5 @@ export class WebStack extends cdk.Stack {
         ],
       }),
     });
-
-    new ssm.StringParameter(this, "CloudfrontDistributionIdParameter", {
-      parameterName: `/${PARAMETER_BASE_PATH}/cloudfront-distribution-id`,
-      stringValue: this.cloudfrontDistribution.distributionId,
-    });
-
-    const targetPlanTier = "Free";
-    const pricingPlanAssociation = new AwsCustomResource(
-      this,
-      "CloudFrontPricingPlanAssociation",
-      {
-        onCreate: {
-          service: "PricingPlanManager",
-          action: "associatePricingPlan", // API action to map a distribution to a tier
-          parameters: {
-            ResourceArn: `arn:aws:cloudfront::${this.account}:distribution/${this.cloudfrontDistribution.distributionId}`,
-            PricingPlanTier: targetPlanTier,
-          },
-          physicalResourceId: PhysicalResourceId.of(
-            `${this.cloudfrontDistribution.distributionId}-${targetPlanTier}`,
-          ),
-        },
-        onDelete: {
-          service: "PricingPlanManager",
-          action: "disassociatePricingPlan",
-          parameters: {
-            ResourceArn: `arn:aws:cloudfront::${this.account}:distribution/${this.cloudfrontDistribution.distributionId}`,
-          },
-        },
-        policy: AwsCustomResourcePolicy.fromSdkCalls({
-          resources: AwsCustomResourcePolicy.ANY_RESOURCE, // Scope down to specific pricing plan ARNs if preferred
-        }),
-      },
-    );
-
-    pricingPlanAssociation.node.addDependency(this.cloudfrontDistribution);
   }
 }
