@@ -44,6 +44,11 @@ export class ApiStack extends cdk.Stack {
       logGroup: logGroup,
     });
 
+    new ssm.StringParameter(this, "ApiFunctionS3Uri", {
+      parameterName: `/${PARAMETER_BASE_PATH}/api-function-s3-uri`,
+      stringValue: `s3://${props.projectBucket.bucketName}}/api/function.zip`,
+    });
+
     apiFunction.node.addDependency(apiArtifact);
     props.projectBucket.grantRead(apiFunction, "api/function.zip");
     props.dynamodbTable.grantReadWriteData(apiFunction);
