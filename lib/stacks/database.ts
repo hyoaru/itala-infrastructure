@@ -1,6 +1,7 @@
-import { aws_dynamodb as dynamodb } from "aws-cdk-lib";
+import { aws_dynamodb as dynamodb, aws_ssm as ssm } from "aws-cdk-lib";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
+import { PARAMETER_BASE_PATH } from "../constants";
 
 export class DatabaseStack extends cdk.Stack {
   public table: dynamodb.TableV2;
@@ -40,6 +41,11 @@ export class DatabaseStack extends cdk.Stack {
           sortKey: { name: "GSI4SK", type: dynamodb.AttributeType.STRING },
         },
       ],
+    });
+
+    new ssm.StringParameter(this, "TableNameParameter", {
+      parameterName: `/${PARAMETER_BASE_PATH}/user-pool-id`,
+      stringValue: this.table.tableName,
     });
   }
 }

@@ -11,7 +11,7 @@ import { Construct } from "constructs";
 import { PARAMETER_BASE_PATH } from "../constants";
 
 interface ApiStackProps extends cdk.StackProps {
-  dynamodbTable: dynamodb.Table;
+  dynamodbTable: dynamodb.TableV2;
 }
 
 export class ApiStack extends cdk.Stack {

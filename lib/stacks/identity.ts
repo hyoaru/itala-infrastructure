@@ -50,6 +50,11 @@ export class IdentityStack extends cdk.Stack {
       featurePlan: cognito.FeaturePlan.ESSENTIALS,
     });
 
+    new ssm.StringParameter(this, "UserPoolIdParameter", {
+      parameterName: `/${PARAMETER_BASE_PATH}/user-pool-id`,
+      stringValue: this.userPool.userPoolId,
+    });
+
     this.userPoolClient = this.userPool.addClient("PWAClient", {
       userPoolClientName: "itala-pwa",
       generateSecret: false,
