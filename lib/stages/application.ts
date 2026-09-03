@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
 import {
+  ApiStack,
   DatabaseStack,
   DeploymentStack,
   IdentityStack,
@@ -12,7 +13,8 @@ export class ApplicationStage extends cdk.Stage {
     super(scope, id, props);
 
     new IdentityStack(this, "Identity");
-    new DatabaseStack(this, "Database");
+    const databaseStack = new DatabaseStack(this, "Database");
+    new ApiStack(this, "Api", { dynamodbTable: databaseStack.table });
     const webStack = new WebStack(this, "Web");
 
     new DeploymentStack(this, "Deployment", {
