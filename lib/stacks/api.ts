@@ -6,7 +6,9 @@ import {
   aws_logs as logs,
   aws_s3 as s3,
   aws_ssm as ssm,
+  aws_cognito as cognito,
 } from "aws-cdk-lib";
+
 import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
@@ -14,6 +16,7 @@ import { PARAMETER_BASE_PATH } from "../constants";
 
 interface ApiStackProps extends cdk.StackProps {
   projectBucket: s3.Bucket;
+  userPool: cognito.UserPool;
   dynamodbTable: dynamodb.TableV2;
 }
 
@@ -42,6 +45,10 @@ export class ApiStack extends cdk.Stack {
       applicationLogLevelV2: lambda.ApplicationLogLevel.INFO,
       systemLogLevelV2: lambda.SystemLogLevel.INFO,
       logGroup: logGroup,
+      environment: {
+        COGNITO_USER_POOL_ID: props.userPool.userPoolId,
+        DYNAMODB_TABLE_NAME: props.dynamodbTable.tableName,
+      },
     });
 
     new ssm.StringParameter(this, "ApiFunctionS3Uri", {

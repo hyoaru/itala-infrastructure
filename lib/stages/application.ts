@@ -14,11 +14,12 @@ export class ApplicationStage extends cdk.Stage {
     super(scope, id, props);
 
     const bootstrapStack = new BootstrapStack(this, "Bootstrap");
-    new IdentityStack(this, "Identity");
+    const identityStack = new IdentityStack(this, "Identity");
     const databaseStack = new DatabaseStack(this, "Database");
 
     new ApiStack(this, "Api", {
       projectBucket: bootstrapStack.projectBucket,
+      userPool: identityStack.userPool,
       dynamodbTable: databaseStack.table,
     });
 
