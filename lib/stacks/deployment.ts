@@ -5,6 +5,7 @@ import {
 } from "aws-cdk-lib";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
+import { PARAMETER_BASE_PATH } from "../constants";
 
 interface DeploymentStackProps extends cdk.StackProps {
   clientArtifactBucket: s3.Bucket;
@@ -39,6 +40,15 @@ export class DeploymentStack extends cdk.Stack {
 
     props.clientArtifactBucket.grantReadWrite(deployRole);
     props.clientDistribution.grantCreateInvalidation(deployRole);
+
+    deployRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["ssm:GetParameter"],
+        resources: [
+          `arn:aws:ssm:${this.region}:${this.account}:parameter/${PARAMETER_BASE_PATH}/*`,
+        ],
+      }),
+    );
 
     new cdk.CfnOutput(this, "DeploymentRoleArn", {
       value: deployRole.roleArn,

@@ -1,6 +1,7 @@
-import { aws_cognito as cognito } from "aws-cdk-lib";
+import { aws_cognito as cognito, aws_ssm as ssm } from "aws-cdk-lib";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
+import { PARAMETER_BASE_PATH } from "../constants";
 
 export class IdentityStack extends cdk.Stack {
   public userPool: cognito.UserPool;
@@ -59,6 +60,11 @@ export class IdentityStack extends cdk.Stack {
       accessTokenValidity: cdk.Duration.hours(1),
       idTokenValidity: cdk.Duration.hours(1),
       authFlows: { userPassword: true, userSrp: true, user: true },
+    });
+
+    new ssm.StringParameter(this, "UserPoolClientId", {
+      parameterName: `/${PARAMETER_BASE_PATH}/user-pool-client-id`,
+      stringValue: this.userPoolClient.userPoolClientId,
     });
   }
 }
