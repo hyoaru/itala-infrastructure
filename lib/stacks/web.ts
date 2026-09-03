@@ -7,11 +7,14 @@ import {
 import { Construct } from "constructs";
 
 export class WebStack extends cdk.Stack {
+  public readonly bucket: s3.Bucket;
+  public readonly distribution: cloudfront.Distribution;
+
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const bucket = new s3.Bucket(this, "Bucket", {
-      bucketName: `hyoacloud-itala-staging-web`,
+    this.bucket = new s3.Bucket(this, "Bucket", {
+      bucketName: `itala-${this.account}-web`,
       bucketNamespace: s3.BucketNamespace.GLOBAL,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,
@@ -23,15 +26,16 @@ export class WebStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    const distribution = new cloudfront.Distribution(this, "Distribution", {
+    this.distribution = new cloudfront.Distribution(this, "Distribution", {
       defaultRootObject: "index.html",
       defaultBehavior: {
-        origin:
-          cloudfront_origins.S3BucketOrigin.withOriginAccessControl(bucket),
+        origin: cloudfront_origins.S3BucketOrigin.withOriginAccessControl(
+          this.bucket,
+        ),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
       },
     });
-    cdk.Tags.of(distribution).add("Name", "Itala");
+    cdk.Tags.of(this.distribution).add("Name", "Itala");
   }
 }

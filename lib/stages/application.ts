@@ -1,6 +1,11 @@
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
-import { DatabaseStack, IdentityStack, WebStack } from "../stacks";
+import {
+  DatabaseStack,
+  DeploymentStack,
+  IdentityStack,
+  WebStack,
+} from "../stacks";
 
 export class ApplicationStage extends cdk.Stage {
   constructor(scope: Construct, id: string, props?: cdk.StageProps) {
@@ -8,6 +13,11 @@ export class ApplicationStage extends cdk.Stage {
 
     new IdentityStack(this, "Identity");
     new DatabaseStack(this, "Database");
-    new WebStack(this, "Web");
+    const webStack = new WebStack(this, "Web");
+
+    new DeploymentStack(this, "Deployment", {
+      clientArtifactBucket: webStack.bucket,
+      clientDistribution: webStack.distribution,
+    });
   }
 }
