@@ -39,6 +39,7 @@ export class DeploymentStack extends cdk.Stack {
     });
 
     props.clientArtifactBucket.grantReadWrite(deployRole);
+    props.clientArtifactBucket.grantDelete(deployRole);
     props.clientDistribution.grantCreateInvalidation(deployRole);
 
     deployRole.addToPolicy(

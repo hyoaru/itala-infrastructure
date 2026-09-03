@@ -3,8 +3,10 @@ import {
   aws_s3 as s3,
   aws_cloudfront as cloudfront,
   aws_cloudfront_origins as cloudfront_origins,
+  aws_ssm as ssm,
 } from "aws-cdk-lib";
 import { Construct } from "constructs";
+import { PARAMETER_BASE_PATH } from "../constants";
 
 export class WebStack extends cdk.Stack {
   public readonly bucket: s3.Bucket;
@@ -26,6 +28,11 @@ export class WebStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    new ssm.StringParameter(this, "BucketNameParameter", {
+      parameterName: `/${PARAMETER_BASE_PATH}/client-artifact-bucket-name`,
+      stringValue: this.bucket.bucketName,
+    });
+
     this.distribution = new cloudfront.Distribution(this, "Distribution", {
       defaultRootObject: "index.html",
       defaultBehavior: {
@@ -37,5 +44,10 @@ export class WebStack extends cdk.Stack {
       },
     });
     cdk.Tags.of(this.distribution).add("Name", "Itala");
+
+    new ssm.StringParameter(this, "DistributionIdParameter", {
+      parameterName: `/${PARAMETER_BASE_PATH}/client-distribution-id`,
+      stringValue: this.distribution.distributionId,
+    });
   }
 }

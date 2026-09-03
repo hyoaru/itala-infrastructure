@@ -62,7 +62,7 @@ export class IdentityStack extends cdk.Stack {
       authFlows: { userPassword: true, userSrp: true, user: true },
     });
 
-    new ssm.StringParameter(this, "UserPoolClientId", {
+    new ssm.StringParameter(this, "UserPoolClientIdParameter", {
       parameterName: `/${PARAMETER_BASE_PATH}/user-pool-client-id`,
       stringValue: this.userPoolClient.userPoolClientId,
     });
