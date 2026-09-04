@@ -21,7 +21,7 @@ export class ApplicationStage extends cdk.Stage {
       projectBucket: bootstrapStack.projectBucket,
     });
 
-    new ApiStack(this, "Api", {
+    const apiStack = new ApiStack(this, "Api", {
       projectBucket: bootstrapStack.projectBucket,
       userPool: identityStack.userPool,
       dynamodbTable: databaseStack.table,
@@ -31,6 +31,7 @@ export class ApplicationStage extends cdk.Stage {
     new DeploymentStack(this, "Deployment", {
       projectBucket: bootstrapStack.projectBucket,
       cloudfrontDistribution: webStack.cloudfrontDistribution,
+      apiFunction: apiStack.apiFunction,
     });
   }
 }

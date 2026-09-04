@@ -1,5 +1,6 @@
 import {
   aws_cloudfront as cloudfront,
+  aws_lambda as lambda,
   aws_iam as iam,
   aws_s3 as s3,
 } from "aws-cdk-lib";
@@ -10,6 +11,7 @@ import { PARAMETER_BASE_PATH } from "../constants";
 interface DeploymentStackProps extends cdk.StackProps {
   projectBucket: s3.Bucket;
   cloudfrontDistribution: cloudfront.Distribution;
+  apiFunction: lambda.Function;
 }
 
 export class DeploymentStack extends cdk.Stack {
@@ -43,6 +45,13 @@ export class DeploymentStack extends cdk.Stack {
     props.projectBucket.grantReadWrite(deployRole, "api/*");
     props.projectBucket.grantDelete(deployRole, "api/*");
     props.cloudfrontDistribution.grantCreateInvalidation(deployRole);
+
+    deployRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["lambda:UpdateFunctionCode"],
+        resources: [props.apiFunction.functionArn],
+      }),
+    );
 
     deployRole.addToPolicy(
       new iam.PolicyStatement({

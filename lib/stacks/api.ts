@@ -23,6 +23,7 @@ interface ApiStackProps extends cdk.StackProps {
 }
 
 export class ApiStack extends cdk.Stack {
+  public readonly apiFunction: lambda.Function;
   constructor(scope: Construct, id: string, props: ApiStackProps) {
     super(scope, id, props);
 
@@ -38,7 +39,7 @@ export class ApiStack extends cdk.Stack {
       destinationKeyPrefix: "api/latest",
     });
 
-    const apiFunction = new lambda.Function(this, "ApiFunction", {
+    this.apiFunction = new lambda.Function(this, "ApiFunction", {
       functionName: "ItalaApiFunction",
       runtime: lambda.Runtime.PROVIDED_AL2023,
       architecture: lambda.Architecture.ARM_64,
@@ -57,6 +58,11 @@ export class ApiStack extends cdk.Stack {
       },
     });
 
+    new ssm.StringParameter(this, "ApiFunctionNameParameter", {
+      parameterName: `/${PARAMETER_BASE_PATH}/api-function-name`,
+      stringValue: this.apiFunction.functionName,
+    });
+
     new ssm.StringParameter(this, "ApiFunctionsS3UriParameter", {
       parameterName: `/${PARAMETER_BASE_PATH}/api-function-s3-uri`,
       stringValue: `s3://${props.projectBucket.bucketName}/api/latest/function.zip`,
@@ -67,9 +73,9 @@ export class ApiStack extends cdk.Stack {
       stringValue: `s3://${props.projectBucket.bucketName}/api`,
     });
 
-    apiFunction.node.addDependency(apiArtifact);
-    props.projectBucket.grantRead(apiFunction, "api/latest/function.zip");
-    props.dynamodbTable.grantReadWriteData(apiFunction);
+    this.apiFunction.node.addDependency(apiArtifact);
+    props.projectBucket.grantRead(this.apiFunction, "api/latest/function.zip");
+    props.dynamodbTable.grantReadWriteData(this.apiFunction);
 
     const apiGateway = new apigateway.HttpApi(this, "ApiGateway", {
       apiName: "itala",
@@ -93,7 +99,7 @@ export class ApiStack extends cdk.Stack {
       methods: [apigateway.HttpMethod.ANY],
       integration: new apigatewayIntegrations.HttpLambdaIntegration(
         "ApiIntegration",
-        apiFunction,
+        this.apiFunction,
       ),
     });
 
