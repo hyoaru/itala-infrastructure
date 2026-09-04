@@ -35,7 +35,7 @@ export class ApiStack extends cdk.Stack {
     const apiArtifact = new s3deploy.BucketDeployment(this, "ApiArtifact", {
       sources: [s3deploy.Source.asset("./assets/api")],
       destinationBucket: props.projectBucket,
-      destinationKeyPrefix: "api",
+      destinationKeyPrefix: "api/latest",
     });
 
     const apiFunction = new lambda.Function(this, "ApiFunction", {
@@ -43,7 +43,10 @@ export class ApiStack extends cdk.Stack {
       runtime: lambda.Runtime.PROVIDED_AL2023,
       architecture: lambda.Architecture.ARM_64,
       handler: "main",
-      code: lambda.Code.fromBucketV2(props.projectBucket, "api/function.zip"),
+      code: lambda.Code.fromBucketV2(
+        props.projectBucket,
+        "api/latest/function.zip",
+      ),
       loggingFormat: lambda.LoggingFormat.JSON,
       applicationLogLevelV2: lambda.ApplicationLogLevel.INFO,
       systemLogLevelV2: lambda.SystemLogLevel.INFO,
@@ -54,13 +57,18 @@ export class ApiStack extends cdk.Stack {
       },
     });
 
-    new ssm.StringParameter(this, "ApiFunctionS3Uri", {
+    new ssm.StringParameter(this, "ApiFunctionsS3UriParameter", {
       parameterName: `/${PARAMETER_BASE_PATH}/api-function-s3-uri`,
-      stringValue: `s3://${props.projectBucket.bucketName}/api/function.zip`,
+      stringValue: `s3://${props.projectBucket.bucketName}/api/latest/function.zip`,
+    });
+
+    new ssm.StringParameter(this, "ApiFunctionS3UriBaseParameter", {
+      parameterName: `/${PARAMETER_BASE_PATH}/api-function-s3-uri-base`,
+      stringValue: `s3://${props.projectBucket.bucketName}/api`,
     });
 
     apiFunction.node.addDependency(apiArtifact);
-    props.projectBucket.grantRead(apiFunction, "api/function.zip");
+    props.projectBucket.grantRead(apiFunction, "api/latest/function.zip");
     props.dynamodbTable.grantReadWriteData(apiFunction);
 
     const apiGateway = new apigateway.HttpApi(this, "ApiGateway", {

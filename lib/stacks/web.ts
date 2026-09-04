@@ -30,6 +30,11 @@ export class WebStack extends cdk.Stack {
 
     new ssm.StringParameter(this, "ClientArtifactS3UriParameter", {
       parameterName: `/${PARAMETER_BASE_PATH}/client-artifact-s3-uri`,
+      stringValue: `s3://${props.projectBucket.bucketName}/client/latest`,
+    });
+
+    new ssm.StringParameter(this, "ClientArtifactS3UriBaseParameter", {
+      parameterName: `/${PARAMETER_BASE_PATH}/client-artifact-s3-uri-base`,
       stringValue: `s3://${props.projectBucket.bucketName}/client`,
     });
 
@@ -42,7 +47,7 @@ export class WebStack extends cdk.Stack {
           origin: cloudfrontOrigins.S3BucketOrigin.withOriginAccessControl(
             projectBucket,
             {
-              originPath: "/client",
+              originPath: "/client/latest",
             },
           ),
           viewerProtocolPolicy:
