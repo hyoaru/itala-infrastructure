@@ -38,21 +38,43 @@ export class WebStack extends cdk.Stack {
       stringValue: `s3://${props.projectBucket.bucketName}/client`,
     });
 
+    const origin = cloudfrontOrigins.S3BucketOrigin.withOriginAccessControl(
+      projectBucket,
+      {
+        originPath: "/client/latest",
+      },
+    );
+
     this.cloudfrontDistribution = new cloudfront.Distribution(
       this,
       "CloudfrontDistribution",
       {
         defaultRootObject: "index.html",
         defaultBehavior: {
-          origin: cloudfrontOrigins.S3BucketOrigin.withOriginAccessControl(
-            projectBucket,
-            {
-              originPath: "/client/latest",
-            },
-          ),
+          origin: origin,
           viewerProtocolPolicy:
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        },
+        additionalBehaviors: {
+          "index.html": {
+            origin,
+            viewerProtocolPolicy:
+              cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+          },
+          "sw.js": {
+            origin,
+            viewerProtocolPolicy:
+              cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+          },
+          "manifest.webmanifest": {
+            origin,
+            viewerProtocolPolicy:
+              cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+          },
         },
         errorResponses: [
           {
