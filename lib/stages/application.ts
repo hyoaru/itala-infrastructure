@@ -76,7 +76,10 @@ export class ApplicationStage extends cdk.Stage {
       projectBucket: bootstrapStack.projectBucket,
       cloudfrontDistribution: webStack.cloudfrontDistribution,
       apiFunction: apiStack.apiFunction,
-      workers: [workerStack.preConfirmationSignUpWorker.worker],
+      workers: [
+        workerStack.preConfirmationSignUpWorker.worker,
+        workerStack.postConfirmationSignUpWorker.worker,
+      ],
     });
   }
 }

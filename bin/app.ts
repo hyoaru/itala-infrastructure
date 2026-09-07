@@ -17,3 +17,15 @@ const staging = new ApplicationStage(app, "ItalaStaging", {
 });
 
 cdk.Tags.of(staging).add("Environment", "Staging");
+
+const production = new ApplicationStage(app, "ItalaProduction", {
+  env: {
+    account: process.env.PRODUCTION_ACCOUNT_ID,
+    region: process.env.CDK_DEFAULT_REGION,
+  },
+  environment: "production",
+  removalPolicy: cdk.RemovalPolicy.RETAIN,
+  zoneName: `production.${process.env.APEX_DOMAIN}`,
+});
+
+cdk.Tags.of(production).add("Environment", "Production");

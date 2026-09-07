@@ -6,6 +6,7 @@ import {
   aws_ssm as ssm,
   aws_certificatemanager as acm,
   aws_route53 as route53,
+  aws_route53_targets as route53Targets,
 } from "aws-cdk-lib";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
@@ -127,6 +128,14 @@ export class WebStack extends cdk.Stack {
           }),
         ],
       }),
+    });
+
+    new route53.ARecord(this, "CloudfrontDomainRecord", {
+      zone: props.hostedZone,
+      recordName: "app",
+      target: route53.RecordTarget.fromAlias(
+        new route53Targets.CloudFrontTarget(this.cloudfrontDistribution),
+      ),
     });
   }
 }

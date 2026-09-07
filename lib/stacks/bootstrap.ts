@@ -21,7 +21,7 @@ export class BootstrapStack extends cdk.Stack {
       versioned: false,
       enforceSSL: true,
       bucketKeyEnabled: true,
-      autoDeleteObjects: true,
+      autoDeleteObjects: props.removalPolicy == cdk.RemovalPolicy.DESTROY,
       removalPolicy: props.removalPolicy,
     });
   }
