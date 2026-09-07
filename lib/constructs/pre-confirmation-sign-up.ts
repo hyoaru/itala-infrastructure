@@ -68,7 +68,7 @@ export class PreConfirmationSignUpWorker extends Construct {
     });
 
     new ssm.StringParameter(this, `${this.node.id}FunctionS3UriBaseParameter`, {
-      parameterName: `/${PARAMETER_BASE_PATH}/worker/pre-confirmation-sign-up/api-function-s3-uri-base`,
+      parameterName: `/${PARAMETER_BASE_PATH}/worker/pre-confirmation-sign-up/function-s3-uri-base`,
       stringValue: workerFunctionArtifactS3UriBase,
     });
 

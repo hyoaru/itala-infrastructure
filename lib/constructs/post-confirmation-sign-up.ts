@@ -68,7 +68,7 @@ export class PostConfirmationSignUpWorker extends Construct {
     });
 
     new ssm.StringParameter(this, `${this.node.id}FunctionS3UriBaseParameter`, {
-      parameterName: `/${PARAMETER_BASE_PATH}/worker/post-confirmation-sign-up/api-function-s3-uri-base`,
+      parameterName: `/${PARAMETER_BASE_PATH}/worker/post-confirmation-sign-up/function-s3-uri-base`,
       stringValue: workerFunctionArtifactS3UriBase,
     });
 
