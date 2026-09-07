@@ -4,13 +4,17 @@ import {
   aws_iam as iam,
   aws_s3 as s3,
   aws_ssm as ssm,
+  aws_certificatemanager as acm,
+  aws_route53 as route53,
 } from "aws-cdk-lib";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
 import { PARAMETER_BASE_PATH } from "../constants";
 
 interface WebStackProps extends cdk.StackProps {
+  hostedZone: route53.HostedZone;
   projectBucket: s3.Bucket;
+  certificateArn: string;
 }
 
 export class WebStack extends cdk.Stack {
@@ -45,10 +49,18 @@ export class WebStack extends cdk.Stack {
       },
     );
 
+    const certificate = acm.Certificate.fromCertificateArn(
+      this,
+      "Certificate",
+      props.certificateArn,
+    );
+
     this.cloudfrontDistribution = new cloudfront.Distribution(
       this,
       "CloudfrontDistribution",
       {
+        domainNames: [`app.${props.hostedZone.zoneName}`],
+        certificate: certificate,
         defaultRootObject: "index.html",
         defaultBehavior: {
           origin: origin,

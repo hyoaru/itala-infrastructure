@@ -3,11 +3,14 @@ import {
   aws_apigatewayv2_integrations as apigatewayIntegrations,
   aws_dynamodb as dynamodb,
   aws_lambda as lambda,
+  aws_route53 as route53,
   aws_logs as logs,
+  aws_certificatemanager as acm,
   aws_s3 as s3,
   aws_ssm as ssm,
   aws_cognito as cognito,
   aws_cloudfront as cloudfront,
+  aws_route53_targets as route53Targets,
 } from "aws-cdk-lib";
 
 import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
@@ -20,6 +23,8 @@ interface ApiStackProps extends cdk.StackProps {
   userPool: cognito.UserPool;
   dynamodbTable: dynamodb.TableV2;
   cloudfrontDistribution: cloudfront.Distribution;
+  hostedZone: route53.HostedZone;
+  certificateArn: string;
 }
 
 export class ApiStack extends cdk.Stack {
@@ -77,12 +82,15 @@ export class ApiStack extends cdk.Stack {
     props.projectBucket.grantRead(this.apiFunction, "api/latest/function.zip");
     props.dynamodbTable.grantReadWriteData(this.apiFunction);
 
+    const apexDomain = props.hostedZone.zoneName.split(".")[1];
     const apiGateway = new apigateway.HttpApi(this, "ApiGateway", {
       apiName: "itala",
       createDefaultStage: true,
       corsPreflight: {
         allowOrigins: [
           `https://${props.cloudfrontDistribution.distributionDomainName}`,
+          `https://app.${props.hostedZone.zoneName}`,
+          `https://app.${apexDomain}`,
         ],
         allowMethods: [apigateway.CorsHttpMethod.ANY],
         allowHeaders: [
@@ -106,6 +114,33 @@ export class ApiStack extends cdk.Stack {
     new ssm.StringParameter(this, "ApiBaseUrlParameter", {
       parameterName: `/${PARAMETER_BASE_PATH}/api-base-url`,
       stringValue: apiGateway.url!,
+    });
+
+    const certificate = acm.Certificate.fromCertificateArn(
+      this,
+      "Certificate",
+      props.certificateArn,
+    );
+
+    const apiDomainName = new apigateway.DomainName(this, "ApiDomainName", {
+      domainName: `api.${props.hostedZone.zoneName}`,
+      certificate,
+    });
+
+    new apigateway.ApiMapping(this, "ApiMapping", {
+      api: apiGateway,
+      domainName: apiDomainName,
+    });
+
+    new route53.ARecord(this, "ApiDomainRecord", {
+      zone: props.hostedZone,
+      recordName: "api",
+      target: route53.RecordTarget.fromAlias(
+        new route53Targets.ApiGatewayv2DomainProperties(
+          apiDomainName.regionalDomainName,
+          apiDomainName.regionalHostedZoneId,
+        ),
+      ),
     });
   }
 }
