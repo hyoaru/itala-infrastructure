@@ -82,7 +82,7 @@ export class ApiStack extends cdk.Stack {
     props.projectBucket.grantRead(this.apiFunction, "api/latest/function.zip");
     props.dynamodbTable.grantReadWriteData(this.apiFunction);
 
-    const apexDomain = props.hostedZone.zoneName.split(".")[1];
+    const apexDomain = props.hostedZone.zoneName.split(".").slice(1).join(".");
     const apiGateway = new apigateway.HttpApi(this, "ApiGateway", {
       apiName: "itala",
       createDefaultStage: true,
