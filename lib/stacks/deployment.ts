@@ -1,17 +1,19 @@
 import {
   aws_cloudfront as cloudfront,
-  aws_lambda as lambda,
   aws_iam as iam,
+  aws_lambda as lambda,
   aws_s3 as s3,
 } from "aws-cdk-lib";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
 import { PARAMETER_BASE_PATH } from "../constants";
+import { Worker } from "../constructs";
 
 interface DeploymentStackProps extends cdk.StackProps {
   projectBucket: s3.Bucket;
   cloudfrontDistribution: cloudfront.Distribution;
   apiFunction: lambda.Function;
+  workers: Worker[];
 }
 
 export class DeploymentStack extends cdk.Stack {
@@ -44,6 +46,8 @@ export class DeploymentStack extends cdk.Stack {
     props.projectBucket.grantDelete(deployRole, "client/*");
     props.projectBucket.grantReadWrite(deployRole, "api/*");
     props.projectBucket.grantDelete(deployRole, "api/*");
+    props.projectBucket.grantReadWrite(deployRole, "worker/*");
+    props.projectBucket.grantDelete(deployRole, "worker/*");
     props.cloudfrontDistribution.grantCreateInvalidation(deployRole);
 
     deployRole.addToPolicy(
@@ -53,6 +57,15 @@ export class DeploymentStack extends cdk.Stack {
       }),
     );
 
+    props.workers.forEach((worker) => {
+      deployRole.addToPolicy(
+        new iam.PolicyStatement({
+          actions: ["lambda:UpdateFunctionCode"],
+          resources: [worker.function.functionArn],
+        }),
+      );
+    });
+
     deployRole.addToPolicy(
       new iam.PolicyStatement({
         actions: ["ssm:GetParameter"],
@@ -61,10 +74,5 @@ export class DeploymentStack extends cdk.Stack {
         ],
       }),
     );
-
-    new cdk.CfnOutput(this, "DeploymentRoleArn", {
-      value: deployRole.roleArn,
-      exportName: "ItalaDeploymentRoleArn",
-    });
   }
 }

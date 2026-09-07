@@ -1,13 +1,24 @@
-import { aws_cognito as cognito, aws_ssm as ssm } from "aws-cdk-lib";
+import {
+  aws_cognito as cognito,
+  aws_ssm as ssm,
+  aws_lambda as lambda,
+} from "aws-cdk-lib";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
+
 import { PARAMETER_BASE_PATH } from "../constants";
+
+interface IdentityStackProps extends cdk.StackProps {
+  removalPolicy: cdk.RemovalPolicy;
+  preConfirmationTriggerFunction: lambda.Function;
+  postConfirmationTriggerFunction: lambda.Function;
+}
 
 export class IdentityStack extends cdk.Stack {
   public userPool: cognito.UserPool;
   public userPoolClient: cognito.UserPoolClient;
 
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: IdentityStackProps) {
     super(scope, id, props);
 
     this.userPool = new cognito.UserPool(this, "UserPool", {
@@ -48,6 +59,11 @@ export class IdentityStack extends cdk.Stack {
         deviceOnlyRememberedOnUserPrompt: false,
       },
       featurePlan: cognito.FeaturePlan.ESSENTIALS,
+      removalPolicy: props.removalPolicy,
+      lambdaTriggers: {
+        preSignUp: props.preConfirmationTriggerFunction,
+        postConfirmation: props.postConfirmationTriggerFunction,
+      },
     });
 
     new ssm.StringParameter(this, "UserPoolIdParameter", {

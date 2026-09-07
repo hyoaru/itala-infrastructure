@@ -2,10 +2,14 @@ import { aws_s3 as s3 } from "aws-cdk-lib";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
 
+interface BootstrapStackProps extends cdk.StackProps {
+  removalPolicy: cdk.RemovalPolicy;
+}
+
 export class BootstrapStack extends cdk.Stack {
   public readonly projectBucket: s3.Bucket;
 
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: BootstrapStackProps) {
     super(scope, id, props);
 
     this.projectBucket = new s3.Bucket(this, "ProjectBucket", {
@@ -18,7 +22,7 @@ export class BootstrapStack extends cdk.Stack {
       enforceSSL: true,
       bucketKeyEnabled: true,
       autoDeleteObjects: true,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy: props.removalPolicy,
     });
   }
 }

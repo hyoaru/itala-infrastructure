@@ -3,10 +3,14 @@ import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
 import { PARAMETER_BASE_PATH } from "../constants";
 
+interface DatabaseStackProps extends cdk.StackProps {
+  removalPolicy: cdk.RemovalPolicy;
+}
+
 export class DatabaseStack extends cdk.Stack {
   public table: dynamodb.TableV2;
 
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: DatabaseStackProps) {
     super(scope, id, props);
 
     this.table = new dynamodb.TableV2(this, "Table", {
@@ -15,7 +19,7 @@ export class DatabaseStack extends cdk.Stack {
       partitionKey: { name: "PK", type: dynamodb.AttributeType.STRING },
       sortKey: { name: "SK", type: dynamodb.AttributeType.STRING },
       timeToLiveAttribute: "expires_at",
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy: props.removalPolicy,
       deletionProtection: false,
       billing: dynamodb.Billing.onDemand(),
       encryption: dynamodb.TableEncryptionV2.awsManagedKey(),
