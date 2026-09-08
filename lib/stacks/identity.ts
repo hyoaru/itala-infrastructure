@@ -54,10 +54,6 @@ export class IdentityStack extends cdk.Stack {
       },
       email: cognito.UserPoolEmail.withCognito(),
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
-      deviceTracking: {
-        challengeRequiredOnNewDevice: false,
-        deviceOnlyRememberedOnUserPrompt: false,
-      },
       featurePlan: cognito.FeaturePlan.ESSENTIALS,
       removalPolicy: props.removalPolicy,
       lambdaTriggers: {
