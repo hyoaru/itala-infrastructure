@@ -111,11 +111,6 @@ export class ApiStack extends cdk.Stack {
       ),
     });
 
-    new ssm.StringParameter(this, "ApiBaseUrlParameter", {
-      parameterName: `/${PARAMETER_BASE_PATH}/api-base-url`,
-      stringValue: apiGateway.url!,
-    });
-
     const certificate = acm.Certificate.fromCertificateArn(
       this,
       "Certificate",
@@ -141,6 +136,11 @@ export class ApiStack extends cdk.Stack {
           apiDomainName.regionalHostedZoneId,
         ),
       ),
+    });
+
+    new ssm.StringParameter(this, "ApiBaseUrlParameter", {
+      parameterName: `/${PARAMETER_BASE_PATH}/api-base-url`,
+      stringValue: apiDomainName.name,
     });
   }
 }
